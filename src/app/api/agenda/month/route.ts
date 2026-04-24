@@ -1,14 +1,15 @@
-﻿export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
-
 import { NextResponse } from "next/server";
 
-import { getCurrentUser } from "@/lib/auth";
-import { canAccessRoute } from "@/lib/permissions";
-import { getAgendaMarkersForMonth, parseAgendaDateKey } from "@/modules/agenda/queries";
-
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(request: Request) {
+  const [{ getCurrentUser }, { canAccessRoute }, { getAgendaMarkersForMonth, parseAgendaDateKey }] = await Promise.all([
+    import("@/lib/auth"),
+    import("@/lib/permissions"),
+    import("@/modules/agenda/queries"),
+  ]);
+
   const user = await getCurrentUser();
 
   if (!user) {
@@ -27,4 +28,3 @@ export async function GET(request: Request) {
     markersByDate,
   });
 }
-
