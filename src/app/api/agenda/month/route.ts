@@ -1,10 +1,12 @@
-﻿import { NextResponse } from "next/server";
+﻿export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth";
 import { canAccessRoute } from "@/lib/permissions";
 import { getAgendaMarkersForMonth, parseAgendaDateKey } from "@/modules/agenda/queries";
 
-export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
