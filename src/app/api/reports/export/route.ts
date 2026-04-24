@@ -1,12 +1,15 @@
-import ExcelJS from "exceljs";
-import { PDFDocument, PDFPage, StandardFonts, rgb } from "pdf-lib";
 import { NextResponse } from "next/server";
+import type { PDFFont, PDFPage, rgb as rgbType } from "pdf-lib";
 
-import { getCurrentUser } from "@/lib/auth";
-import { canAccessRoute } from "@/lib/permissions";
-import { type SearchParamsRecord } from "@/lib/list-navigation";
-import { getPreparedReportData } from "@/modules/reports/export";
+import type { SearchParamsRecord } from "@/lib/list-navigation";
+import type { PreparedReportData } from "@/modules/reports/export";
 import type { ReportsUser } from "@/modules/reports/queries";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+type ResolvedReport = NonNullable<PreparedReportData>;
+type DrawTextColor = ReturnType<typeof rgbType>;
 
 function clampText(value: string, maxLength: number) {
   if (value.length <= maxLength) {
@@ -22,16 +25,13 @@ function clampText(value: string, maxLength: number) {
 
 function buildColumnWidths(headers: string[], rows: string[][]) {
   return headers.map((header, index) => {
-    const contentLength = Math.max(
-      header.length,
-      ...rows.map((row) => (row[index] ?? "").length),
-    );
-
+    const contentLength = Math.max(header.length, ...rows.map((row) => (row[index] ?? "").length));
     return Math.min(Math.max(contentLength + 2, 14), 40);
   });
 }
 
-async function buildExcelBuffer(report: NonNullable<Awaited<ReturnType<typeof getPreparedReportData>>>) {
+async function buildExcelBuffer(report: ResolvedReport) {
+  const ExcelJS = (await import("exceljs")).default;
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Relatório");
 
@@ -62,7 +62,6 @@ async function buildExcelBuffer(report: NonNullable<Awaited<ReturnType<typeof ge
   }
 
   const widths = buildColumnWidths(report.headers, report.rows);
-
   sheet.columns = widths.map((width) => ({ width }));
   sheet.views = [{ state: "frozen", ySplit: headerRow.number }];
 
@@ -70,7 +69,7 @@ async function buildExcelBuffer(report: NonNullable<Awaited<ReturnType<typeof ge
   return Buffer.from(buffer);
 }
 
-function buildTableLines(report: NonNullable<Awaited<ReturnType<typeof getPreparedReportData>>>) {
+function buildTableLines(report: ResolvedReport) {
   const widths = buildColumnWidths(report.headers, report.rows).map((width) => Math.min(width, 22));
   const separator = widths.map((width) => "-".repeat(width)).join("-+-");
   const headerLine = report.headers.map((header, index) => clampText(header, widths[index]!)).join(" | ");
@@ -81,14 +80,18 @@ function buildTableLines(report: NonNullable<Awaited<ReturnType<typeof getPrepar
   return [headerLine, separator, ...dataLines];
 }
 
-function drawWrappedText(page: PDFPage, text: string, options: {
-  font: Awaited<ReturnType<PDFDocument["embedFont"]>>;
-  size: number;
-  x: number;
-  y: number;
-  lineHeight: number;
-  color?: ReturnType<typeof rgb>;
-}) {
+function drawWrappedText(
+  page: PDFPage,
+  text: string,
+  options: {
+    font: PDFFont;
+    size: number;
+    x: number;
+    y: number;
+    lineHeight: number;
+    color: DrawTextColor;
+  },
+) {
   let currentY = options.y;
 
   for (const line of text.split("\n")) {
@@ -97,7 +100,7 @@ function drawWrappedText(page: PDFPage, text: string, options: {
       y: currentY,
       size: options.size,
       font: options.font,
-      color: options.color ?? rgb(0.16, 0.18, 0.22),
+      color: options.color,
     });
     currentY -= options.lineHeight;
   }
@@ -105,7 +108,8 @@ function drawWrappedText(page: PDFPage, text: string, options: {
   return currentY;
 }
 
-async function buildPdfBuffer(report: NonNullable<Awaited<ReturnType<typeof getPreparedReportData>>>) {
+async function buildPdfBuffer(report: ResolvedReport) {
+  const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
   const pdf = await PDFDocument.create();
   const pageSize: [number, number] = [842, 595];
   const margin = 36;
@@ -115,6 +119,7 @@ async function buildPdfBuffer(report: NonNullable<Awaited<ReturnType<typeof getP
   const lines = buildTableLines(report);
   let page = pdf.addPage(pageSize);
   let currentY = page.getHeight() - margin;
+  const defaultColor = rgb(0.16, 0.18, 0.22);
 
   const startNewPage = () => {
     page = pdf.addPage(pageSize);
@@ -136,6 +141,7 @@ async function buildPdfBuffer(report: NonNullable<Awaited<ReturnType<typeof getP
     x: margin,
     y: currentY,
     lineHeight: 14,
+    color: defaultColor,
   });
   currentY = drawWrappedText(page, `Total de registros: ${report.totalRecords}`, {
     font: bodyFont,
@@ -143,6 +149,7 @@ async function buildPdfBuffer(report: NonNullable<Awaited<ReturnType<typeof getP
     x: margin,
     y: currentY,
     lineHeight: 14,
+    color: defaultColor,
   });
 
   if (report.filtersSummary.length > 0) {
@@ -153,6 +160,7 @@ async function buildPdfBuffer(report: NonNullable<Awaited<ReturnType<typeof getP
       x: margin,
       y: currentY,
       lineHeight: 15,
+      color: defaultColor,
     });
 
     for (const filter of report.filtersSummary) {
@@ -162,6 +170,7 @@ async function buildPdfBuffer(report: NonNullable<Awaited<ReturnType<typeof getP
         x: margin + 8,
         y: currentY,
         lineHeight: 14,
+        color: defaultColor,
       });
     }
   }
@@ -178,7 +187,7 @@ async function buildPdfBuffer(report: NonNullable<Awaited<ReturnType<typeof getP
       y: currentY,
       size: 8.5,
       font: monoFont,
-      color: rgb(0.16, 0.18, 0.22),
+      color: defaultColor,
     });
     currentY -= 11;
   }
@@ -188,6 +197,12 @@ async function buildPdfBuffer(report: NonNullable<Awaited<ReturnType<typeof getP
 }
 
 export async function GET(request: Request) {
+  const [{ getCurrentUser }, { canAccessRoute }, { getPreparedReportData }] = await Promise.all([
+    import("@/lib/auth"),
+    import("@/lib/permissions"),
+    import("@/modules/reports/export"),
+  ]);
+
   const user = await getCurrentUser();
 
   if (!user) {
