@@ -1,0 +1,328 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  USER
+}
+
+enum ProtocolStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  FINISHED
+  CANCELLED
+}
+
+enum ContractAmendmentType {
+  PRAZO
+  VALOR
+  PRAZO_E_VALOR
+  OUTRO
+}
+
+enum ContractAttachmentAuditAction {
+  SUBSTITUIU_ANEXO
+  EXCLUIU_ANEXO
+}
+
+enum LicitationModality {
+  PREGAO
+  CONCORRENCIA
+  TOMADA_DE_PRECO
+  DISPENSA
+  INEXIGIBILIDADE
+  OUTRO
+}
+
+enum LicitationStatus {
+  RASCUNHO
+  PUBLICADO
+  EM_ANDAMENTO
+  HOMOLOGADO
+  CONTRATADO
+  CANCELADO
+}
+
+enum PermissionModule {
+  protocolos
+  contratos
+  licitacoes
+  fornecedores
+  usuarios
+}
+
+enum NotificationType {
+  URGENT
+  WARNING
+  INFO
+}
+
+enum AgendaEventCategory {
+  REUNIAO
+  PRAZO
+  TAREFA
+  LEMBRETE
+  OUTRO
+}
+
+enum AgendaEventPriority {
+  BAIXA
+  NORMAL
+  ALTA
+  URGENTE
+}
+
+model Sector {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
+
+  @@map("sectors")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(MANAGER)
+  active       Boolean  @default(true)
+  sectorId     String?
+  avatarName   String?  @map("avatar_name")
+  avatarPath   String?  @map("avatar_path")
+  avatarMimeType String? @map("avatar_mime_type")
+  avatarSize   Int?     @map("avatar_size")
+  avatarUploadedAt DateTime? @map("avatar_uploaded_at")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sector       Sector?  @relation(fields: [sectorId], references: [id], onDelete: SetNull)
+  protocols    Protocol[]
+  contractAttachmentAuditLogs ContractAttachmentAuditLog[]
+  modulePermissions UserModulePermission[]
+  notifications Notification[]
+  agendaEvents AgendaEvent[]
+
+  @@map("users")
+}
+
+model AgendaEvent {
+  id          String              @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime
+  startTime   String?             @map("start_time")
+  endTime     String?             @map("end_time")
+  allDay      Boolean             @default(false) @map("all_day")
+  category    AgendaEventCategory @default(OUTRO)
+  priority    AgendaEventPriority @default(NORMAL)
+  notes       String?
+  createdById String              @map("created_by_id")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  createdBy   User                @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([createdById, date])
+  @@index([date])
+  @@map("agenda_events")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String           @map("user_id")
+  sourceKey String?          @map("source_key")
+  title     String
+  message   String
+  href      String
+  type      NotificationType @default(INFO)
+  isRead    Boolean          @default(false) @map("is_read")
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sourceKey])
+  @@index([userId, isRead, createdAt])
+  @@map("notifications")
+}
+
+model ChamberConfig {
+  id             String   @id @default("default")
+  name           String   @default("Camara Municipal")
+  logoName       String?  @map("logo_name")
+  logoPath       String?  @map("logo_path")
+  logoMimeType   String?  @map("logo_mime_type")
+  logoSize       Int?     @map("logo_size")
+  logoUploadedAt DateTime? @map("logo_uploaded_at")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("chamber_config")
+}
+
+model UserModulePermission {
+  id        String           @id @default(cuid())
+  userId    String           @map("user_id")
+  module    PermissionModule
+  canView   Boolean          @default(false) @map("can_view")
+  canCreate Boolean          @default(false) @map("can_create")
+  canEdit   Boolean          @default(false) @map("can_edit")
+  canDelete Boolean          @default(false) @map("can_delete")
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, module])
+  @@map("user_module_permissions")
+}
+
+model Supplier {
+  id           String     @id @default(cuid())
+  companyName  String     @map("company_name")
+  tradeName    String?    @map("trade_name")
+  document     String     @unique
+  email        String?
+  phone        String?
+  contactName  String?    @map("contact_name")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  contracts    Contract[]
+  wonLicitations Licitation[] @relation("WinnerSupplier")
+
+  @@map("suppliers")
+}
+
+model Protocol {
+  id          String         @id @default(cuid())
+  code        String         @unique
+  subject     String
+  description String?
+  status      ProtocolStatus @default(OPEN)
+  createdById String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  createdBy   User           @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@map("protocols")
+}
+
+model Contract {
+  id                 String              @id @default(cuid())
+  number             String              @unique
+  object             String
+  status             ContractStatus      @default(DRAFT)
+  supplierId         String?
+  startDate          DateTime?
+  endDate            DateTime?
+  endDateCurrent     DateTime?           @map("end_date_current")
+  initialValue       Decimal?            @db.Decimal(14, 2) @map("initial_value")
+  currentValue       Decimal?            @db.Decimal(14, 2) @map("current_value")
+  attachmentName     String?             @map("attachment_name")
+  attachmentPath     String?             @map("attachment_path")
+  attachmentMimeType String?             @map("attachment_mime_type")
+  attachmentSize     Int?                @map("attachment_size")
+  attachmentUploadedAt DateTime?         @map("attachment_uploaded_at")
+  notes              String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  supplier           Supplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  amendments         ContractAmendment[]
+  attachmentAuditLogs ContractAttachmentAuditLog[]
+  licitation         Licitation?
+
+  @@map("contracts")
+}
+
+model ContractAmendment {
+  id                 String                @id @default(cuid())
+  contractId         String                @map("contract_id")
+  number             String
+  type               ContractAmendmentType
+  amendmentDate      DateTime              @map("amendment_date")
+  description        String
+  previousEndDate    DateTime?             @map("previous_end_date")
+  newEndDate         DateTime?             @map("new_end_date")
+  previousValue      Decimal?              @db.Decimal(14, 2) @map("previous_value")
+  newValue           Decimal?              @db.Decimal(14, 2) @map("new_value")
+  attachmentName     String?               @map("attachment_name")
+  attachmentPath     String?               @map("attachment_path")
+  attachmentMimeType String?               @map("attachment_mime_type")
+  attachmentSize     Int?                  @map("attachment_size")
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  contract           Contract              @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, number])
+  @@map("contract_amendments")
+}
+
+model ContractAttachmentAuditLog {
+  id                String                        @id @default(cuid())
+  contractId        String                        @map("contract_id")
+  userId            String                        @map("user_id")
+  action            ContractAttachmentAuditAction
+  previousFileName  String?                       @map("previous_file_name")
+  newFileName       String?                       @map("new_file_name")
+  justification     String?
+  createdAt         DateTime                      @default(now())
+
+  contract          Contract                      @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  user              User                          @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@map("contract_attachment_audit_logs")
+}
+
+model Licitation {
+  id                           String             @id @default(cuid())
+  number                       String             @unique
+  object                       String
+  modality                     LicitationModality
+  status                       LicitationStatus   @default(RASCUNHO)
+  publicationDate              DateTime?          @map("publication_date")
+  openingDate                  DateTime?          @map("opening_date")
+  estimatedValue               Decimal?           @db.Decimal(14, 2) @map("estimated_value")
+  awardedValue                 Decimal?           @db.Decimal(14, 2) @map("awarded_value")
+  notes                        String?
+  winnerSupplierId             String?            @map("winner_supplier_id")
+  contractGenerated            Boolean            @default(false) @map("contract_generated")
+  generatedContractId          String?            @unique @map("generated_contract_id")
+  editalFileName               String?            @map("edital_file_name")
+  editalFilePath               String?            @map("edital_file_path")
+  editalFileMimeType           String?            @map("edital_file_mime_type")
+  editalFileSize               Int?               @map("edital_file_size")
+  editalUploadedAt             DateTime?          @map("edital_uploaded_at")
+  homologationFileName         String?            @map("homologation_file_name")
+  homologationFilePath         String?            @map("homologation_file_path")
+  homologationFileMimeType     String?            @map("homologation_file_mime_type")
+  homologationFileSize         Int?               @map("homologation_file_size")
+  homologationUploadedAt       DateTime?          @map("homologation_uploaded_at")
+  createdAt                    DateTime           @default(now())
+  updatedAt                    DateTime           @updatedAt
+
+  winnerSupplier               Supplier?          @relation("WinnerSupplier", fields: [winnerSupplierId], references: [id], onDelete: SetNull)
+  generatedContract            Contract?          @relation(fields: [generatedContractId], references: [id], onDelete: SetNull)
+
+  @@map("licitations")
+}
