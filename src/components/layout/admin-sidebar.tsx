@@ -30,7 +30,7 @@ export function AdminSidebar({ modulePermissions, userRole }: AdminSidebarProps)
   const visibleNavigation = navigation.filter((item) => canAccessRoute({ role: userRole, modulePermissions }, item.href));
 
   return (
-    <aside className="flex min-h-screen w-full max-w-[280px] flex-col bg-sidebar px-6 py-8 text-sidebar-foreground">
+    <aside className="flex h-full w-full flex-col overflow-y-auto bg-sidebar px-5 py-7 text-sidebar-foreground shadow-2xl lg:px-6 lg:py-8 lg:shadow-none">
       <Link href="/dashboard" className="group mb-8 block px-4 py-3 transition duration-200 hover:opacity-95">
         <div className="flex justify-center">
           <AppBrand align="center" />

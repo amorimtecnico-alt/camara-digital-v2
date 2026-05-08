@@ -301,30 +301,30 @@ export default async function EditarContratoPage({ params, searchParams }: Edita
             <p className="text-sm text-[#4f6557]">Nenhum log de alteracao do anexo principal foi registrado.</p>
           ) : (
             contract.attachmentAuditLogs.map((log) => (
-              <div key={log.id} className="rounded-2xl border border-border bg-background p-5">
-                <div className="grid gap-3 text-sm text-[#415446] md:grid-cols-2 xl:grid-cols-3">
-                  <p>
-                    <span className="block text-xs uppercase tracking-[0.18em] text-[#5f7365]">Acao</span>
+              <div key={log.id} className="min-w-0 rounded-2xl border border-border bg-background p-4 sm:p-5">
+                <div className="grid min-w-0 gap-3 text-[13px] text-[#415446] sm:text-sm md:grid-cols-2 xl:grid-cols-3">
+                  <p className="min-w-0 break-words">
+                    <span className="block text-[11px] uppercase tracking-[0.12em] text-[#5f7365] sm:text-xs sm:tracking-[0.18em]">Acao</span>
                     {log.action === "SUBSTITUIU_ANEXO" ? "Substituiu anexo" : "Excluiu anexo"}
                   </p>
-                  <p>
-                    <span className="block text-xs uppercase tracking-[0.18em] text-[#5f7365]">Usuario</span>
+                  <p className="min-w-0 break-words">
+                    <span className="block text-[11px] uppercase tracking-[0.12em] text-[#5f7365] sm:text-xs sm:tracking-[0.18em]">Usuario</span>
                     {log.user.name} ({log.user.role})
                   </p>
-                  <p>
-                    <span className="block text-xs uppercase tracking-[0.18em] text-[#5f7365]">Data/hora</span>
+                  <p className="min-w-0 break-words">
+                    <span className="block text-[11px] uppercase tracking-[0.12em] text-[#5f7365] sm:text-xs sm:tracking-[0.18em]">Data/hora</span>
                     {formatContractDateTime(log.createdAt)}
                   </p>
-                  <p>
-                    <span className="block text-xs uppercase tracking-[0.18em] text-[#5f7365]">Arquivo anterior</span>
+                  <p className="min-w-0 break-words">
+                    <span className="block text-[11px] uppercase tracking-[0.12em] text-[#5f7365] sm:text-xs sm:tracking-[0.18em]">Arquivo anterior</span>
                     {log.previousFileName ?? "Não informado"}
                   </p>
-                  <p>
-                    <span className="block text-xs uppercase tracking-[0.18em] text-[#5f7365]">Arquivo novo</span>
+                  <p className="min-w-0 break-words">
+                    <span className="block text-[11px] uppercase tracking-[0.12em] text-[#5f7365] sm:text-xs sm:tracking-[0.18em]">Arquivo novo</span>
                     {log.newFileName ?? "Não informado"}
                   </p>
-                  <p>
-                    <span className="block text-xs uppercase tracking-[0.18em] text-[#5f7365]">Justificativa</span>
+                  <p className="min-w-0 break-words">
+                    <span className="block text-[11px] uppercase tracking-[0.12em] text-[#5f7365] sm:text-xs sm:tracking-[0.18em]">Justificativa</span>
                     {log.justification ?? "Nao informada"}
                   </p>
                 </div>
@@ -347,36 +347,36 @@ export default async function EditarContratoPage({ params, searchParams }: Edita
             <p className="text-sm text-[#4f6557]">Nenhum aditivo cadastrado para este contrato.</p>
           ) : (
             contract.amendments.map((amendment) => (
-              <div key={amendment.id} className="rounded-2xl border border-border bg-background p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h3 className="text-lg font-semibold text-foreground">{amendment.number}</h3>
-                      <span className="rounded-full bg-[#eef1f4] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#4b5c68]">
+              <div key={amendment.id} className="min-w-0 rounded-2xl border border-border bg-background p-4 sm:p-5">
+                <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0 space-y-3">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+                      <h3 className="min-w-0 break-words text-base font-semibold text-foreground sm:text-lg">{amendment.number}</h3>
+                      <span className="max-w-full rounded-full bg-[#eef1f4] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#4b5c68] sm:px-3 sm:text-xs sm:tracking-[0.16em]">
                         {contractAmendmentTypeLabels[amendment.type]}
                       </span>
                     </div>
 
-                    <div className="grid gap-3 text-sm text-[#415446] md:grid-cols-2 xl:grid-cols-4">
-                      <p>
-                        <span className="block text-xs uppercase tracking-[0.18em] text-[#5f7365]">Data</span>
+                    <div className="grid min-w-0 gap-3 text-[13px] text-[#415446] sm:text-sm md:grid-cols-2 xl:grid-cols-4">
+                      <p className="min-w-0 break-words">
+                        <span className="block text-[11px] uppercase tracking-[0.12em] text-[#5f7365] sm:text-xs sm:tracking-[0.18em]">Data</span>
                         {formatContractDate(amendment.amendmentDate)}
                       </p>
-                      <p>
-                        <span className="block text-xs uppercase tracking-[0.18em] text-[#5f7365]">Prazo</span>
+                      <p className="min-w-0 break-words">
+                        <span className="block text-[11px] uppercase tracking-[0.12em] text-[#5f7365] sm:text-xs sm:tracking-[0.18em]">Prazo</span>
                         {formatContractDate(amendment.previousEndDate)} {" -> "} {formatContractDate(amendment.newEndDate)}
                       </p>
-                      <p>
-                        <span className="block text-xs uppercase tracking-[0.18em] text-[#5f7365]">Valor</span>
+                      <p className="min-w-0 break-words">
+                        <span className="block text-[11px] uppercase tracking-[0.12em] text-[#5f7365] sm:text-xs sm:tracking-[0.18em]">Valor</span>
                         {formatCurrencyValue(amendment.previousValue)} {" -> "} {formatCurrencyValue(amendment.newValue)}
                       </p>
-                      <p>
-                        <span className="block text-xs uppercase tracking-[0.18em] text-[#5f7365]">Arquivo</span>
+                      <p className="min-w-0 break-words">
+                        <span className="block text-[11px] uppercase tracking-[0.12em] text-[#5f7365] sm:text-xs sm:tracking-[0.18em]">Arquivo</span>
                         {amendment.attachmentPath ? "PDF disponivel" : "Sem arquivo"}
                       </p>
                     </div>
 
-                    <p className="text-sm text-[#415446]">{amendment.description}</p>
+                    <p className="break-words text-[13px] leading-5 text-[#415446] sm:text-sm">{amendment.description}</p>
 
                     {amendment.attachmentPath ? (
                       <div className="flex flex-wrap gap-3">
